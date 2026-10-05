@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Détail commande — Admin D.A.P</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<header class="admin-header">
+  <div class="admin-header-inner">
+    <img src="../images/dap-logo.png" alt="D.A.P" class="admin-logo">
+    <nav class="admin-nav">
+      <a href="dashboard.html">Tableau de bord</a>
+      <a href="orders.html" class="active">Commandes</a>
+    </nav>
+    <button id="logoutBtn" class="btn btn-ghost">Déconnexion</button>
+  </div>
+</header>
+<main class="admin-main">
+  <a href="orders.html" class="back-link">← Retour aux commandes</a>
+  <div id="orderContent">Chargement…</div>
+</main>
+<script src="config.js"></script>
+<script src="admin-common.js"></script>
+<script>
+(async function() {
+  await requireAuth();
+  var ref = new URLSearchParams(window.location.search).get('ref');
+  var content = document.getElementById('orderContent');
+  if (!ref) { content.innerHTML = '<p>Référence manquante.</p>'; return; }
+  var res = await fetch(API_BASE_URL + '/api/admin/orders/' + encodeURIComponent(ref), { credentials: 'include' });
+  var data = await res.json();
+  if (!data.ok) { content.innerHTML = '<p>Commande introuvable.</p>'; return; }
+  var o = data.order;
+  var itemsHtml = o.items.map(function(it) {
+    return '<tr><td>' + it.name + '</td><td>' + (it.format || '-') + '</td><td>' + it.qty + '</td><td>' +
+      (it.price ? fcfa(it.price) : 'sur demande') + '</td><td>' + (it.price ? fcfa(it.price * it.qty) : '-') + '</td></tr>';
+  }).join('');
+  content.innerHTML =
+    '<div class="order-detail-head"><div><h1>' + o.ref + '</h1><p class="admin-sub">' +
+      new Date(o.created_at).toLocaleString('fr-FR') + ' · Canal : ' + (o.channel || '-') + '</p></div>' +
+      '<div class="order-detail-actions"><select id="statusSelect">' +
+        ['À confirmer','En attente de paiement','Payé','Échec paiement'].map(function(s) {
+          return '<option value="' + s + '"' + (s === o.status ? ' selected' : '') + '>' + s + '</option>'; }).join('') +
+      '</select><a href="' + API_BASE_URL + '/api/admin/orders/' + encodeURIComponent(o.ref) + '/invoice" target="_blank" class="btn btn-primary">Générer la facture (PDF)</a></div></div>' +
+    '<div class="order-client-card">' +
+      '<div><span>Client</span><b>' + o.name + '</b></div>' +
+      '<div><span>Téléphone</span><b>' + o.phone + '</b></div>' +
+      '<div><span>Adresse</span><b>' + o.address + (o.city ? ', ' + o.city : '') + '</b></div>' +
+      (o.email ? '<div><span>Email</span><b>' + o.email + '</b></div>' : '') +
+      (o.notes ? '<div><span>Notes</span><b>' + o.notes + '</b></div>' : '') +
+    '</div>' +
+    '<table class="admin-table"><thead><tr><th>Produit</th><th>Format</th><th>Qté</th><th>Prix unit.</th><th>Total</th></tr></thead><tbody>' + itemsHtml + '</tbody></table>' +
+    '<div class="order-total-row"><span>Total</span><b>' + fcfa(o.total) + '</b></div>';
+  document.getElementById('statusSelect').addEventListener('change', async function() {
+    await fetch(API_BASE_URL + '/api/admin/orders/' + encodeURIComponent(ref) + '/status', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify({ status: this.value }),
+    });
+  });
+  document.getElementById('logoutBtn').addEventListener('click', logout);
+})();
+</script>
+</body>
+</html>

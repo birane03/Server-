@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connexion — Admin D.A.P</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin-login-body">
+  <div class="login-card">
+    <img src="../images/dap-logo.png" alt="D.A.P" class="login-logo">
+    <h1>Espace administrateur</h1>
+    <p class="login-sub">Réservé à l'équipe D.A.P.</p>
+    <form id="loginForm">
+      <label>Identifiant</label>
+      <input type="text" id="username" autocomplete="username" required>
+      <label>Mot de passe</label>
+      <input type="password" id="password" autocomplete="current-password" required>
+      <button type="submit" class="btn btn-primary">Se connecter</button>
+      <p class="login-error" id="loginError"></p>
+    </form>
+  </div>
+  <script src="config.js"></script>
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var errorEl = document.getElementById('loginError');
+      errorEl.textContent = '';
+      try {
+        var res = await fetch(API_BASE_URL + '/api/admin/login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+          body: JSON.stringify({ username: document.getElementById('username').value, password: document.getElementById('password').value }),
+        });
+        var data = await res.json();
+        if (data.ok) window.location.href = 'dashboard.html';
+        else errorEl.textContent = data.error || 'Identifiants incorrects.';
+      } catch (err) { errorEl.textContent = 'Impossible de contacter le serveur.'; }
+    });
+  </script>
+</body>
+</html>

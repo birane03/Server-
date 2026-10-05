@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tableau de bord — Admin D.A.P</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<header class="admin-header">
+  <div class="admin-header-inner">
+    <img src="../images/dap-logo.png" alt="D.A.P" class="admin-logo">
+    <nav class="admin-nav">
+      <a href="dashboard.html" class="active">Tableau de bord</a>
+      <a href="orders.html">Commandes</a>
+    </nav>
+    <button id="logoutBtn" class="btn btn-ghost">Déconnexion</button>
+  </div>
+</header>
+<main class="admin-main">
+  <h1>Tableau de bord</h1>
+  <p class="admin-sub">Vue d'ensemble de l'activité commerciale.</p>
+  <div class="stats-grid">
+    <div class="stat-card"><span class="stat-label">Commandes</span><span class="stat-value" id="statOrders">—</span></div>
+    <div class="stat-card stat-card-primary"><span class="stat-label">Chiffre d'affaires (payé)</span><span class="stat-value" id="statCA">—</span></div>
+    <div class="stat-card"><span class="stat-label">En attente de paiement</span><span class="stat-value" id="statPending">—</span></div>
+  </div>
+  <h2>Produits les plus vendus</h2>
+  <table class="admin-table">
+    <thead><tr><th>Produit</th><th>Quantité vendue</th><th>Chiffre d'affaires</th></tr></thead>
+    <tbody id="topProductsBody"><tr><td colspan="3">Chargement…</td></tr></tbody>
+  </table>
+  <h2>Dernières commandes</h2>
+  <table class="admin-table">
+    <thead><tr><th>Réf.</th><th>Date</th><th>Client</th><th>Total</th><th>Statut</th><th></th></tr></thead>
+    <tbody id="recentOrdersBody"><tr><td colspan="6">Chargement…</td></tr></tbody>
+  </table>
+</main>
+<script src="config.js"></script>
+<script src="admin-common.js"></script>
+<script>
+(async function() {
+  await requireAuth();
+  try {
+    var res = await fetch(API_BASE_URL + '/api/admin/stats', { credentials: 'include' });
+    var data = await res.json();
+    if (data.ok) {
+      document.getElementById('statOrders').textContent = data.nbCommandes;
+      document.getElementById('statCA').textContent = fcfa(data.ca);
+      document.getElementById('statPending').textContent = fcfa(data.caEnAttente);
+      var tpBody = document.getElementById('topProductsBody');
+      tpBody.innerHTML = data.topProduits.length
+        ? data.topProduits.map(function(p) { return '<tr><td>' + p.name + '</td><td>' + p.qty_total + '</td><td>' + fcfa(p.ca_total) + '</td></tr>'; }).join('')
+        : '<tr><td colspan="3">Aucune donnée pour le moment.</td></tr>';
+    }
+  } catch (err) { console.error(err); }
+  try {
+    var res2 = await fetch(API_BASE_URL + '/api/admin/orders', { credentials: 'include' });
+    var data2 = await res2.json();
+    var orders = (data2.orders || []).slice(0, 10);
+    document.getElementById('recentOrdersBody').innerHTML = orders.length
+      ? orders.map(function(o) {
+          return '<tr><td>' + o.ref + '</td><td>' + new Date(o.created_at).toLocaleDateString('fr-FR') + '</td><td>' + o.name + '</td><td>' + fcfa(o.total) +
+            '</td><td><span class="status-badge status-' + statusClass(o.status) + '">' + o.status + '</span></td>' +
+            '<td><a href="order.html?ref=' + encodeURIComponent(o.ref) + '">Voir →</a></td></tr>';
+        }).join('')
+      : '<tr><td colspan="6">Aucune commande pour le moment.</td></tr>';
+  } catch (err) { console.error(err); }
+  document.getElementById('logoutBtn').addEventListener('click', logout);
+})();
+</script>
+</body>
+</html>

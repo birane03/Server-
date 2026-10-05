@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Commandes — Admin D.A.P</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<header class="admin-header">
+  <div class="admin-header-inner">
+    <img src="../images/dap-logo.png" alt="D.A.P" class="admin-logo">
+    <nav class="admin-nav">
+      <a href="dashboard.html">Tableau de bord</a>
+      <a href="orders.html" class="active">Commandes</a>
+    </nav>
+    <button id="logoutBtn" class="btn btn-ghost">Déconnexion</button>
+  </div>
+</header>
+<main class="admin-main">
+  <h1>Toutes les commandes</h1>
+  <p class="admin-sub">Liste complète, avec recherche et filtre par statut.</p>
+  <div class="filters-row">
+    <input type="text" id="searchInput" placeholder="Rechercher (nom, téléphone, référence)...">
+    <select id="statusFilter">
+      <option value="">Tous les statuts</option>
+      <option value="À confirmer">À confirmer</option>
+      <option value="En attente de paiement">En attente de paiement</option>
+      <option value="Payé">Payé</option>
+      <option value="Échec paiement">Échec paiement</option>
+    </select>
+  </div>
+  <table class="admin-table">
+    <thead><tr><th>Réf.</th><th>Date</th><th>Client</th><th>Téléphone</th><th>Canal</th><th>Total</th><th>Statut</th><th></th></tr></thead>
+    <tbody id="ordersBody"><tr><td colspan="8">Chargement…</td></tr></tbody>
+  </table>
+</main>
+<script src="config.js"></script>
+<script src="admin-common.js"></script>
+<script>
+(async function() {
+  await requireAuth();
+  async function loadOrders() {
+    var params = new URLSearchParams();
+    var search = document.getElementById('searchInput').value;
+    var status = document.getElementById('statusFilter').value;
+    if (search) params.set('search', search);
+    if (status) params.set('status', status);
+    var res = await fetch(API_BASE_URL + '/api/admin/orders?' + params.toString(), { credentials: 'include' });
+    var data = await res.json();
+    var orders = data.orders || [];
+    document.getElementById('ordersBody').innerHTML = orders.length
+      ? orders.map(function(o) {
+          return '<tr><td>' + o.ref + '</td><td>' + new Date(o.created_at).toLocaleDateString('fr-FR') + '</td><td>' + o.name +
+            '</td><td>' + o.phone + '</td><td>' + (o.channel || '-') + '</td><td>' + fcfa(o.total) +
+            '</td><td><span class="status-badge status-' + statusClass(o.status) + '">' + o.status + '</span></td>' +
+            '<td><a href="order.html?ref=' + encodeURIComponent(o.ref) + '">Voir →</a></td></tr>';
+        }).join('')
+      : '<tr><td colspan="8">Aucune commande trouvée.</td></tr>';
+  }
+  document.getElementById('searchInput').addEventListener('input', debounce(loadOrders, 300));
+  document.getElementById('statusFilter').addEventListener('change', loadOrders);
+  document.getElementById('logoutBtn').addEventListener('click', logout);
+  loadOrders();
+})();
+</script>
+</body>
+</html>
