@@ -39,7 +39,11 @@ app.use((req, res, next) => {
   }
 });
 
+// PayTech envoie ses notifications (IPN) en formulaire : on accepte aussi ce format.
+app.use(express.urlencoded({ extended: true }));
+
 app.use("/api/orders", require("./routes/orders"));
+app.use("/api/paytech", require("./routes/paytech"));
 app.use("/api/checkout", require("./routes/checkout"));
 app.use("/api/admin", require("./routes/admin"));
 

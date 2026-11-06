@@ -49,6 +49,7 @@
       '<div><span>Client</span><b>' + o.name + '</b></div>' +
       '<div><span>Téléphone</span><b>' + o.phone + '</b></div>' +
       '<div><span>Adresse</span><b>' + o.address + (o.city ? ', ' + o.city : '') + '</b></div>' +
+      (o.wave_transaction_id ? '<div><span>Paiement</span><b>' + o.wave_transaction_id + '</b></div>' : '') +
       (o.email ? '<div><span>Email</span><b>' + o.email + '</b></div>' : '') +
       (o.notes ? '<div><span>Notes</span><b>' + o.notes + '</b></div>' : '') +
     '</div>' +
